@@ -57,6 +57,9 @@ Base.@kwdef mutable struct Cell <: PlutoDependencyExplorer.AbstractCell
     # note that this field might be moved somewhere else later. If you are interested in visualizing the cell dependencies, take a look at the cell_dependencies field in the frontend instead.
     cell_dependencies::CellDependencies{Cell}=CellDependencies{Cell}(Dict{Symbol,Vector{Cell}}(), Dict{Symbol,Vector{Cell}}(), 99)
 
+    # This field should be considered as private, as its meaning might change;
+    # currently it is true when the cell is disabled (explicitly or indirectly).
+    # Use `is_disabled` whenever possible.
     depends_on_disabled_cells::Bool=false
     depends_on_skipped_cells::Bool=false
 
@@ -77,8 +80,33 @@ function Base.convert(::Type{Cell}, cell::Dict)
     )
 end
 
-"Returns whether or not the cell is **explicitely** disabled."
-is_disabled(c::Cell) = get(c.metadata, METADATA_DISABLED_KEY, DEFAULT_CELL_METADATA[METADATA_DISABLED_KEY])
+"""
+    is_disabled(c::Cell; cause = :explicit)
+
+Return whether or not the cell is disabled.
+What caused the disabling can be selected with the `cause` kwarg.
+`cause` may be `:explicit` (the user explicitly disabled this cell),
+`:indirect` (the cell has not been explicitly disabled, but depends on a disabled cell),
+or :any (the cause may be either `:explicit` or `:indirect`)
+
+Note: :explicit is the current default, to keep backward compatibility,
+but :any would be a nicer default, so that might change in the future.
+Meanwhile, it is advised to always select the `cause` (don't use `is_disabled(cell)` without kwarg).
+"""
+function is_disabled(c::Cell; cause = :explicit)
+    # for now, c.depends_on_disabled_cells is true whatever the cause
+    _is_disabled = c.depends_on_disabled_cells
+    cause === :any && return _is_disabled
+    _is_explicitly_disabled = get(
+        c.metadata,
+        METADATA_DISABLED_KEY,
+        DEFAULT_CELL_METADATA[METADATA_DISABLED_KEY]
+    )
+    cause === :explicit && return _is_explicitly_disabled
+    cause === :indirect && return (_is_disabled && !_is_explicitly_disabled)
+    throw(ArgumentError("unknown `cause`: `$(QuoteNode(cause))`"))
+end
+
 set_disabled(c::Cell, value::Bool) = if value == DEFAULT_CELL_METADATA[METADATA_DISABLED_KEY]
     delete!(c.metadata, METADATA_DISABLED_KEY)
 else
