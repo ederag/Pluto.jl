@@ -3,7 +3,10 @@ using Pluto
 using Pluto: update_run!, ServerSession, ClientSession, Cell, Notebook, set_disabled, is_disabled, WorkspaceManager
 
 
-
+get_disabled_cells(notebook; cause = :any) = [
+    i for (i, c) in pairs(notebook.cells)
+    if is_disabled(c; cause)
+]
 
 
 @testset "Cell Disabling" begin
@@ -42,12 +45,10 @@ using Pluto: update_run!, ServerSession, ClientSession, Cell, Notebook, set_disa
     # helper functions
     id(i) = notebook.cells[i].cell_id
     c(i) = notebook.cells[i]
-    get_indirectly_disabled_cells(notebook) = [i for (i, c) in pairs(notebook.cells) if c.depends_on_disabled_cells]
 
     
-    
     @test !any(is_disabled, notebook.cells)
-    @test get_indirectly_disabled_cells(notebook) == []
+    @test get_disabled_cells(notebook) == []
     @test all(noerror, notebook.cells)
     
     ###
@@ -58,7 +59,7 @@ using Pluto: update_run!, ServerSession, ClientSession, Cell, Notebook, set_disa
     @test c(6).errored
     @test c(8).errored
     @test c(10).errored
-    @test get_indirectly_disabled_cells(notebook) == []
+    @test get_disabled_cells(notebook) == []
     
     ###
     set_disabled(c(1), true)
@@ -68,14 +69,14 @@ using Pluto: update_run!, ServerSession, ClientSession, Cell, Notebook, set_disa
     @test noerror(c(6))
     @test noerror(c(8))
     @test noerror(c(10))
-    @test get_indirectly_disabled_cells(notebook) == [1, 5]
+    @test get_disabled_cells(notebook) == [1, 5]
     
     update_run!(🍭, notebook, c(5:6))
     @test noerror(c(1))
     @test noerror(c(6))
     @test noerror(c(8))
     @test noerror(c(10))    
-    @test get_indirectly_disabled_cells(notebook) == [1, 5]
+    @test get_disabled_cells(notebook) == [1, 5]
     
     ###
     set_disabled(c(1), false)
@@ -86,7 +87,7 @@ using Pluto: update_run!, ServerSession, ClientSession, Cell, Notebook, set_disa
     @test c(6).errored
     @test c(8).errored
     @test c(10).errored
-    @test get_indirectly_disabled_cells(notebook) == []
+    @test get_disabled_cells(notebook) == []
     
     ###
     set_disabled(c(5), true)
@@ -96,7 +97,7 @@ using Pluto: update_run!, ServerSession, ClientSession, Cell, Notebook, set_disa
     @test noerror(c(6))
     @test noerror(c(8))
     @test noerror(c(10))
-    @test get_indirectly_disabled_cells(notebook) == [5]
+    @test get_disabled_cells(notebook) == [5]
     
     ###
     set_disabled(c(1), true)
@@ -106,7 +107,7 @@ using Pluto: update_run!, ServerSession, ClientSession, Cell, Notebook, set_disa
     @test noerror(c(6))
     @test noerror(c(8))
     @test noerror(c(10))
-    @test get_indirectly_disabled_cells(notebook) == [1, 5]
+    @test get_disabled_cells(notebook) == [1, 5]
     
     
     ###
@@ -119,7 +120,7 @@ using Pluto: update_run!, ServerSession, ClientSession, Cell, Notebook, set_disa
     @test c(7).errored
     @test c(8).errored
     @test c(10).errored
-    @test get_indirectly_disabled_cells(notebook) == [1, 5]
+    @test get_disabled_cells(notebook) == [1, 5]
     
     ###
     set_disabled(c(2), true)
@@ -129,7 +130,7 @@ using Pluto: update_run!, ServerSession, ClientSession, Cell, Notebook, set_disa
     @test noerror(c(7))
     @test noerror(c(8))
     @test noerror(c(10))
-    @test get_indirectly_disabled_cells(notebook) == [1, 2, 5, 6]
+    @test get_disabled_cells(notebook) == [1, 2, 5, 6]
     
     
     ###
@@ -140,7 +141,7 @@ using Pluto: update_run!, ServerSession, ClientSession, Cell, Notebook, set_disa
     @test c(8).errored
     @test c(9).errored
     @test c(10).errored
-    @test get_indirectly_disabled_cells(notebook) == [1, 2, 5, 6]
+    @test get_disabled_cells(notebook) == [1, 2, 5, 6]
     
     
     ###
@@ -152,7 +153,7 @@ using Pluto: update_run!, ServerSession, ClientSession, Cell, Notebook, set_disa
     @test noerror(c(7))
     @test noerror(c(8))
     @test noerror(c(10))
-    @test get_indirectly_disabled_cells(notebook) == [1, 2, 4, 5, 6, 9]
+    @test get_disabled_cells(notebook) == [1, 2, 4, 5, 6, 9]
     
     
     ###
@@ -182,13 +183,13 @@ using Pluto: update_run!, ServerSession, ClientSession, Cell, Notebook, set_disa
     @test noerror(c(8))
     @test noerror(c(10))
     
-    @test get_indirectly_disabled_cells(notebook) == [1, 3, 5, 6, 7, 9]
+    @test get_disabled_cells(notebook) == [1, 3, 5, 6, 7, 9]
     
     ###
     set_disabled(c(3), false)
     update_run!(🍭, notebook, c(3))
     
-    @test get_indirectly_disabled_cells(notebook) == [1, 5, 6, 9]
+    @test get_disabled_cells(notebook) == [1, 5, 6, 9]
     @test c(7).errored
     @test c(8).errored
     @test c(10).errored
@@ -197,7 +198,7 @@ using Pluto: update_run!, ServerSession, ClientSession, Cell, Notebook, set_disa
     set_disabled(c(10), true)
     update_run!(🍭, notebook, c(10))
     
-    @test get_indirectly_disabled_cells(notebook) == [1, 5, 6, 9, 10]
+    @test get_disabled_cells(notebook) == [1, 5, 6, 9, 10]
     @test noerror(c(7))
     @test noerror(c(8))
     
@@ -206,7 +207,7 @@ using Pluto: update_run!, ServerSession, ClientSession, Cell, Notebook, set_disa
     set_disabled(c(10), false)
     update_run!(🍭, notebook, c([7,10]))
     
-    @test get_indirectly_disabled_cells(notebook) == [1, 5, 6, 7, 9]
+    @test get_disabled_cells(notebook) == [1, 5, 6, 7, 9]
     @test noerror(c(7))
     @test noerror(c(8))
     @test noerror(c(10))
@@ -261,7 +262,6 @@ end
 
     # helper functions
     id(i) = notebook.cells[i].cell_id
-    get_disabled_cells(notebook) = [i for (i, c) in pairs(notebook.cells) if c.depends_on_disabled_cells]
 
     @test !any(get(c.metadata, "disabled", false) for c in notebook.cells)
     @test !any(c.depends_on_disabled_cells for c in notebook.cells)
