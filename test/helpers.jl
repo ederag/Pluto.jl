@@ -86,7 +86,7 @@ end
 "Whether the given .jl file can be run without any errors. While notebooks cells can be in arbitrary order, their order in the save file must be topological.
 
 If `only_undefvar` is `true`, all errors other than an `UndefVarError` will be ignored."
-function jl_is_runnable(path; only_undefvar=false)
+function jl_is_runnable(path; only_undefvar = false, quiet = false)
     🔖 = Symbol("lab", time_ns())
     🏡 = Core.eval(Main, :(module $(🔖) end))
     try
@@ -94,6 +94,7 @@ function jl_is_runnable(path; only_undefvar=false)
         true
     catch ex
         if (!only_undefvar) || ex isa UndefVarError || (ex isa LoadError && ex.error isa UndefVarError)
+            if !quiet
             println(stderr, "\n$(path) failed to run. File contents:")
 
             println(stderr, "\n\n\n")
@@ -102,6 +103,7 @@ function jl_is_runnable(path; only_undefvar=false)
 
             showerror(stderr, ex, stacktrace(catch_backtrace()))
             println(stderr)
+            end
             false
         else
             true
