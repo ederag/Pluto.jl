@@ -450,3 +450,23 @@ end
         @test_broken is_disabled(notebook.cells[2]; cause = :indirect)
     end
 end
+
+
+@testset "Save order upon duplicate definition (#3155)" begin
+    🍭 = ServerSession()
+    🍭.options.evaluation.workspace_use_distributed = false
+    notebook = Notebook(Cell.([
+        "x = 1",
+        "",  # Placeholder, will be updated later with "x = 2"
+        "2x",
+    ]))
+
+    update_run!(🍭, notebook, notebook.cells)
+    setcode!(notebook.cells[2], "x = 2")
+
+    mktemp() do path, io
+        notebook.path = path
+        Pluto.update_save_run!(🍭, notebook, notebook.cells)
+        @test_broken jl_is_runnable(path, only_undefvar = true, quiet = true)
+    end
+end
