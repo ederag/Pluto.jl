@@ -422,3 +422,31 @@ end
 
     cleanup(🍭, notebook)
 end
+
+
+@testset "Indirectly disabled cell + usings (#3263)" begin
+    🍭 = ServerSession()
+    🍭.options.evaluation.workspace_use_distributed = false
+    notebook = Notebook(Cell.([
+        "import Test",
+        "Test.@test iseven(2)",
+    ]))
+
+    update_run!(🍭, notebook, notebook.cells)
+    set_disabled(notebook.cells[1], true)  # disable "import Test"
+    update_run!(🍭, notebook, notebook.cells[1])
+    @test is_disabled(notebook.cells[1]; cause = :explicit)
+    @test is_disabled(notebook.cells[2]; cause = :indirect)
+
+    mktemp() do path, io
+        notebook.path = path
+        Pluto.save_notebook(io, notebook)
+        cleanup(🍭, notebook)
+
+        seekstart(io)
+        notebook = Pluto.load_notebook_nobackup(io, path)
+        update_run!(🍭, notebook, notebook.cells)
+        @test is_disabled(notebook.cells[1]; cause = :explicit)
+        @test_broken is_disabled(notebook.cells[2]; cause = :indirect)
+    end
+end
