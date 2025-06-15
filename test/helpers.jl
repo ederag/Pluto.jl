@@ -95,14 +95,14 @@ function jl_is_runnable(path; only_undefvar = false, quiet = false)
     catch ex
         if (!only_undefvar) || ex isa UndefVarError || (ex isa LoadError && ex.error isa UndefVarError)
             if !quiet
-            println(stderr, "\n$(path) failed to run. File contents:")
+                println(stderr, "\n$(path) failed to run. File contents:")
 
-            println(stderr, "\n\n\n")
-            println.(enumerate(readlines(path; keep=true)))
-            println(stderr, "\n\n\n")
+                println(stderr, "\n\n\n")
+                println.(enumerate(readlines(path; keep=true)))
+                println(stderr, "\n\n\n")
 
-            showerror(stderr, ex, stacktrace(catch_backtrace()))
-            println(stderr)
+                showerror(stderr, ex, stacktrace(catch_backtrace()))
+                println(stderr)
             end
             false
         else
