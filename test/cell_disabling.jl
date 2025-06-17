@@ -264,7 +264,7 @@ end
     id(i) = notebook.cells[i].cell_id
 
     @test !any(get(c.metadata, "disabled", false) for c in notebook.cells)
-    @test !any(c.depends_on_disabled_cells for c in notebook.cells)
+    @test !any(is_disabled(c; cause = :any) for c in notebook.cells)
 
     # disable first cell
     notebook.cells[1].metadata["disabled"] = true
@@ -304,7 +304,7 @@ end
     original_6_output = notebook.cells[6].output.body
     setcode!(notebook.cells[6], "x + 6")
     update_run!(🍭, notebook, notebook.cells[6])
-    @test notebook.cells[6].depends_on_disabled_cells
+    @test is_disabled(notebook.cells[6]; cause = :any)
     @test notebook.cells[6].errored === false
     @test notebook.cells[6].output.body == original_6_output
 

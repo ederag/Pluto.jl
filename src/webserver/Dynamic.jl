@@ -118,7 +118,7 @@ function notebook_to_js(notebook::Notebook)
         "cell_results" => Dict{UUID,Dict{String,Any}}(
             id => Dict{String,Any}(
                 "cell_id" => cell.cell_id,
-                "depends_on_disabled_cells" => cell.depends_on_disabled_cells,
+                "depends_on_disabled_cells" => is_disabled(cell; cause = :any),
                 "output" => FirebaseyUtils.ImmutableMarker(cell.output),
                 "published_object_keys" => collect(keys(cell.published_objects)),
                 "queued" => cell.queued,
