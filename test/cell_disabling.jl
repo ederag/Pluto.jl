@@ -470,3 +470,26 @@ end
         @test_broken jl_is_runnable(path, only_undefvar = true, quiet = true)
     end
 end
+
+
+@testset "Pkg.activate in disabled cell (#2930)" begin
+    🍭 = ServerSession()
+    🍭.options.evaluation.workspace_use_distributed = false
+    notebook = Notebook(Cell.([
+        "using Pluto",
+        """begin
+            using Pkg
+            Pkg.activate("/tmp/lel2")
+        end""",
+    ]))
+
+    set_disabled(notebook.cells[2], true)  # disable "Pkg.activate"
+    update_run!(🍭, notebook, notebook.cells)
+    @test !notebook.cells[1].errored  # this one passed already
+
+    mktemp() do path, io
+        notebook.path = path
+        Pluto.update_save_run!(🍭, notebook, notebook.cells)
+        @test_broken notebook.cells[1].errored  # this one failed
+    end
+end
