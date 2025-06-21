@@ -82,16 +82,22 @@ function run_reactive_core!(
     # by setting the reactive node and expression caches of deleted cells to "empty", we are essentially pretending that those cells still exist, but now have empty code. this makes our algorithm simpler.
     new_topology = PlutoDependencyExplorer.exclude_roots(new_topology, removed_cells)
 
-    # find (directly and indirectly) deactivated cells and update their status
-    indirectly_deactivated = collect(topological_order_cached(new_topology, collect(new_topology.disabled_cells); allow_multiple_defs=true, skip_at_partial_multiple_defs=true))
+    # find (explicitly and indirectly) disabled cells and update their status
+    explicitly_disabled = collect(new_topology.disabled_cells)
+    disabled = topological_order_cached(
+        new_topology,
+        explicitly_disabled;
+        allow_multiple_defs = true,
+        skip_at_partial_multiple_defs = true
+    ) |> collect
 
-    for cell in indirectly_deactivated
+    for cell in disabled
         cell.running = false
         cell.queued = false
         cell.depends_on_disabled_cells = true
     end
 
-    new_topology = PlutoDependencyExplorer.exclude_roots(new_topology, indirectly_deactivated)
+    new_topology = PlutoDependencyExplorer.exclude_roots(new_topology, disabled)
 
     # save the old topological order - we'll delete variables assigned from its
     # and re-evalutate its cells unless the cells have already run previously in the reactive run
@@ -102,13 +108,13 @@ function run_reactive_core!(
     to_delete_funcs = union!(Set{Tuple{UUID,FunctionName}}(), defined_functions(old_topology, old_runnable)...)
 
 
-    new_roots = setdiff(union(roots, keys(old_order.errable)), indirectly_deactivated)
+    new_roots = setdiff(union(roots, keys(old_order.errable)), disabled)
     # get the new topological order
     new_order = topological_order_cached(new_topology, new_roots)
     new_runnable = setdiff(new_order.runnable, already_run)
     to_run = setdiff!(
         union(new_runnable, old_runnable),
-        indirectly_deactivated,
+        disabled,
         keys(new_order.errable)
     )::Vector{Cell} # TODO: think if old error cell order matters
 
@@ -155,7 +161,7 @@ function run_reactive_core!(
     to_delete_funcs = union!(to_delete_funcs, defined_functions(new_topology, new_errable)...)
 	
     cells_to_macro_invalidate = Set{UUID}(c.cell_id for c in cells_with_deleted_macros(old_topology, new_topology))
-	cells_to_js_link_invalidate = Set{UUID}(c.cell_id for c in union!(Set{Cell}(), to_run, new_errable, indirectly_deactivated))
+	cells_to_js_link_invalidate = Set{UUID}(c.cell_id for c in union!(Set{Cell}(), to_run, new_errable, disabled))
 
     module_imports_to_move = reduce(all_cells(new_topology); init=Set{Expr}()) do module_imports_to_move, c
         c ∈ to_run && return module_imports_to_move
