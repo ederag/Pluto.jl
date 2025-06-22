@@ -447,7 +447,7 @@ end
         notebook = Pluto.load_notebook_nobackup(io, path)
         update_run!(🍭, notebook, notebook.cells)
         @test is_disabled(notebook.cells[1]; cause = :explicit)
-        @test_broken is_disabled(notebook.cells[2]; cause = :indirect)
+        @test is_disabled(notebook.cells[2]; cause = :indirect)
     end
 end
 
