@@ -428,8 +428,9 @@ end
     🍭 = ServerSession()
     🍭.options.evaluation.workspace_use_distributed = false
     notebook = Notebook(Cell.([
-        "import Test",
+        "using Test",
         "Test.@test iseven(2)",
+        "@test isodd(3)",
     ]))
 
     update_run!(🍭, notebook, notebook.cells)
@@ -437,6 +438,7 @@ end
     update_run!(🍭, notebook, notebook.cells[1])
     @test is_disabled(notebook.cells[1]; cause = :explicit)
     @test is_disabled(notebook.cells[2]; cause = :indirect)
+    @test is_disabled(notebook.cells[3]; cause = :indirect)
 
     mktemp() do path, io
         notebook.path = path
@@ -448,6 +450,7 @@ end
         update_run!(🍭, notebook, notebook.cells)
         @test is_disabled(notebook.cells[1]; cause = :explicit)
         @test is_disabled(notebook.cells[2]; cause = :indirect)
+        @test_broken is_disabled(notebook.cells[3]; cause = :indirect)
     end
 end
 
