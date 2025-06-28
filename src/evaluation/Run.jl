@@ -82,11 +82,11 @@ function run_reactive_core!(
     # by setting the reactive node and expression caches of deleted cells to "empty", we are essentially pretending that those cells still exist, but now have empty code. this makes our algorithm simpler.
     new_topology = PlutoDependencyExplorer.exclude_roots(new_topology, removed_cells)
 
-    # find (explicitly and indirectly) disabled cells and update their status
-    explicitly_disabled = collect(new_topology.disabled_cells)
+
     # Leaving this change to be sure, but it was OK => revert when fixed (see elog:1280)
     # explicitly_disabled = collect(new_topology.disabled_cells)
     explicitly_disabled = filter(c -> is_disabled(c, cause = :explicit), all_cells(new_topology))
+    # find (explicitly and indirectly) disabled cells and update their status
     disabled = topological_order_cached(
         new_topology,
         explicitly_disabled;
