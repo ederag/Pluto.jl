@@ -67,6 +67,18 @@ function run_reactive_core!(
 	
     if !PlutoDependencyExplorer.is_resolved(new_topology)
         unresolved_topology = new_topology
+
+        for cell in all_cells(unresolved_topology)
+            implicit_usings = collect_implicit_usings(new_topology, cell)
+            if !isempty(implicit_usings)
+                @show cell.code, implicit_usings
+                # Add exported symbols to the cell definitions
+                soft_definitions = WorkspaceManager.collect_soft_definitions((session, notebook), implicit_usings)
+                @show soft_definitions
+                unresolved_topology = with_new_soft_definitions(unresolved_topology, cell, soft_definitions)
+                @show unresolved_topology.nodes[cell].definitions
+            end
+        end
         new_topology = notebook.topology = resolve_topology(session, notebook, unresolved_topology, old_workspace_name; current_roots = setdiff(roots, already_run))
 
         # update cache and save notebook because the dependencies might have changed after expanding macros
