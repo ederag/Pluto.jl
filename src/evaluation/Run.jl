@@ -84,6 +84,9 @@ function run_reactive_core!(
 
     # find (explicitly and indirectly) disabled cells and update their status
     explicitly_disabled = collect(new_topology.disabled_cells)
+    # Leaving this change to be sure, but it was OK => revert when fixed (see elog:1280)
+    # explicitly_disabled = collect(new_topology.disabled_cells)
+    explicitly_disabled = filter(c -> is_disabled(c, cause = :explicit), all_cells(new_topology))
     disabled = topological_order_cached(
         new_topology,
         explicitly_disabled;
