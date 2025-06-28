@@ -8,11 +8,11 @@ function exported_names(mod::Module)
 end
 
 function get_module_names(workspace_module, module_ex::Expr)
-    try
+#     try
         Core.eval(workspace_module, Expr(:call, exported_names, module_ex)) |> Set{Symbol}
-    catch
-        Set{Symbol}()
-    end
+#     catch
+#         Set{Symbol}()
+#     end
 end
 
 function collect_soft_definitions(workspace_module, modules::Set{Expr})
